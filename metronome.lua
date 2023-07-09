@@ -15,7 +15,7 @@ res = require('resources')
 packets = require('packets')
 config = require('config')
 texts = require('texts')
-inspect = require('inspect')
+-- inspect = require('inspect')
 
 chat_purple = string.char(0x1F, 200)
 chat_grey = string.char(0x1F, 160)
@@ -287,7 +287,6 @@ windower.register_event('incoming chunk', function(id, data, modified, injected,
     if tracker[actor_id]
         and S{64,204,206,350,531}:contains(msg_id)
         and (step_debuffs[debuff_id1] or step_debuffs[debuff_id2]) then
-      windower.add_to_chat(1, inspect(packet, {depth=5}))
       tracker[actor_id][debuff_id1] = nil
       tracker[actor_id][debuff_id2] = nil
       -- If actor has no more step debuffs, remove from tracker
@@ -323,7 +322,6 @@ windower.register_event('job change', function(main_job_id, main_job_level, sub_
 end)
 
 windower.register_event('action', function(act)
-  windower.add_to_chat(1, inspect(act, {depth=5}))
   if act.category == 14 then -- Unblinkable JA
     local step = step_actions[act.param]
     if step then
