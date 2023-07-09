@@ -1,6 +1,6 @@
 _addon.name = 'HasteInfo'
 _addon.author = 'Shasta'
-_addon.version = '0.0.2'
+_addon.version = '0.0.3'
 _addon.commands = {'met','metronome'}
 
 -------------------------------------------------------------------------------
@@ -15,7 +15,7 @@ res = require('resources')
 packets = require('packets')
 config = require('config')
 texts = require('texts')
-inspect = require('inspect')
+-- inspect = require('inspect')
 
 chat_purple = string.char(0x1F, 200)
 chat_grey = string.char(0x1F, 160)
@@ -278,10 +278,6 @@ windower.register_event('incoming chunk', function(id, data, modified, injected,
     local debuff_id1 = packet['Param 1']
     local debuff_id2 = packet['Param 2']
     
-    if tracker[actor_id]
-        and S{64,204,206,350,531}:contains(msg_id) then
-      windower.add_to_chat(1, inspect(packet, {depth=5}))
-    end
     if tracker[actor_id]
         and S{64,204,206,350,531}:contains(msg_id)
         and (step_debuffs[debuff_id1] or step_debuffs[debuff_id2]) then
