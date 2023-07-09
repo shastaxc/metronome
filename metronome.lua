@@ -1,6 +1,6 @@
 _addon.name = 'HasteInfo'
 _addon.author = 'Shasta'
-_addon.version = '0.0.1'
+_addon.version = '0.0.2'
 _addon.commands = {'met','metronome'}
 
 -------------------------------------------------------------------------------
@@ -77,16 +77,16 @@ function init()
   tracker = {} -- Tracks enemies' step debuffs, keyed by enemy actor ID
   -- Tracked value model:
   -- {
-  --   ['Quickstep'] =    {exp=6483818, name='Quick Step',   action_id=201, status_id=386},
-  --   ['Box Step'] =     {exp=1345345, name='Box Step',     action_id=201, status_id=391},
-  --   ['Stutter Step'] = {exp=4573573, name='Stutter Step', action_id=201, status_id=396},
-  --   ['Feather Step'] = {exp=7894567, name='Feather Step', action_id=201, status_id=448},
+  --   ['Quickstep'] =    {name='Quick Step',   action_id=201, status_id=386, exp=6483818, level=1},
+  --   ['Box Step'] =     {name='Box Step',     action_id=201, status_id=391, exp=1345345, level=3},
+  --   ['Stutter Step'] = {name='Stutter Step', action_id=201, status_id=396, exp=4573573, level=1},
+  --   ['Feather Step'] = {name='Feather Step', action_id=201, status_id=448, exp=7894567, level=5},
   -- }
   loop_time = now() -- Timestamp of previous loop reset
   update_player_info()
   settings = config.load(default_settings)
   ui = texts.new('${value}', settings.display)
-  ui.value = 'Loading...'
+  ui.value = 'Loading Metronome...'
   -- Set UI visibility based on saved setting
   ui:visible(settings.show_ui)
 
@@ -147,14 +147,32 @@ function update_ui_text(force_update)
 
   -- Create text line-by-line
   local lines = T{}
+  local header = '  Lv  Step         Time'
+  lines:append(header)
   for _, step in pairs(tracked_steps) do
     -- If expired, remove from tracker
     if step.exp < now() then
       tracker[target.id][step.name] = nil
     else
-      local str = step.name..' '..format_time(step.exp - now())
+      local str = '['
+      -- Calculate spacer
+      if step.level < 10 then
+        str = str..' '
+      end
+      str = str..step.level..'] '..step.name
+      -- Calculate spacer
+      local len = 13 - step.name:length()
+      str = str..string.rep(' ', len)
+      str = str..format_time(step.exp - now())
       lines:append(str)
     end
+  end
+
+  -- If only one line (the header), remove tracked enemy because no active debuffs
+  if lines:length() == 1 then
+    tracker[target.id] = nil
+    ui:text('')
+    return
   end
 
   -- Compose new text by combining all lines into a single string separated by line breaks
@@ -171,7 +189,7 @@ function format_time(time_in_milli)
 end
 
 -- Calculate expiration time for the debuff and track it
-function process_step_action(act, step)
+function process_step_action(act, step, level)
   local target_id = act.targets[1].id
 
   -- Duration affected by DNC main vs subjob
@@ -202,9 +220,10 @@ function process_step_action(act, step)
     current_exp = nil
   end
 
-  -- If no current expiration or current tracked step is expired, simply add duration to current time
+  -- If no current expiration or current tracked step is expired, this is intial application
   if not current_exp then
-    new_exp = now() + (is_main and STEP_TIME_EXTENSION_MAIN * 1000 or STEP_TIME_EXTENSION_SUB * 1000) + (step_jp * 1000)
+    -- Initial application is 1 min (plus possible step JP)
+    new_exp = now() + (60 * 1000) + (step_jp * 1000)
   else -- If debuff is already on enemy, calculate extended duration
     new_exp = current_exp + (is_main and STEP_TIME_EXTENSION_MAIN * 1000 or STEP_TIME_EXTENSION_SUB * 1000) + (step_jp * 1000)
 
@@ -226,6 +245,7 @@ function process_step_action(act, step)
 
   local new_step = step
   new_step.exp = new_exp
+  new_step.level = level
 
   if not tracker[target_id] then
     tracker[target_id] = {}
@@ -238,6 +258,45 @@ end
 function now()
   return os.clock() * 1000
 end
+
+windower.register_event('incoming chunk', function(id, data, modified, injected, blocked)
+  if id == 0x00E then -- NPC Update
+    -- Clear entry from tracker if enemy is dead
+    local packet = packets.parse('incoming', data)
+    local actor_id = packet['NPC']
+    if tracker[actor_id] then
+      if packet['HP %'] <= 0 and (packet['Status'] == 2 or packet['Status'] == 3) then
+        tracker[actor_id] = nil
+      end
+    end
+  elseif id == 0x05B then -- Spawn
+    -- Clear entry from tracker when enemy spawns
+    local packet = packets.parse('incoming', data)
+    local actor_id = packet.ID
+    if tracker[actor_id] then
+      tracker[actor_id] = nil
+    end
+  elseif id == 0x029 then -- Action message
+    -- Listen for debuff removal/expiration
+    local packet = packets.parse('incoming', data)
+    local actor_id = packet['Target']
+    local msg_id = packet['Message']
+    local debuff_id1 = packet['Param 1']
+    local debuff_id2 = packet['Param 2']
+    
+    if tracker[actor_id]
+        and S{64,204,206,350,531}:contains(msg_id)
+        and (step_debuffs[debuff_id1] or step_debuffs[debuff_id2]) then
+      windower.add_to_chat(1, inspect(packet, {depth=5}))
+      tracker[actor_id][debuff_id1] = nil
+      tracker[actor_id][debuff_id2] = nil
+      -- If actor has no more step debuffs, remove from tracker
+      if tracker[actor_id]:length() == 0 then
+        tracker[actor_id] = nil
+      end
+    end
+  end
+end)
 
 windower.register_event('load', function()
   if windower.ffxi.get_player() then
@@ -264,11 +323,22 @@ windower.register_event('job change', function(main_job_id, main_job_level, sub_
 end)
 
 windower.register_event('action', function(act)
+  windower.add_to_chat(1, inspect(act, {depth=5}))
   if act.category == 14 then -- Unblinkable JA
     local step = step_actions[act.param]
     if step then
-      process_step_action(act, step)
-      update_ui_text(true)
+      local level = act.targets[1].actions[1].param
+      if level > 0 then
+        process_step_action(act, step, level)
+        update_ui_text(true)
+      end
+    end
+  elseif act.category == 6 and (act.param == 18 or act.param == 96) then -- Benediction or Wild Card
+    -- If target is a tracked enemy, reset its debuffs
+    for _,target in pairs(act.targets) do
+      if tracker[target.id] then
+        tracker[target.id] = nil
+      end
     end
   end
 end)

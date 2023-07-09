@@ -20,6 +20,4 @@ Displays a UI only when targeting an enemy with a Step debuff on it. This UI wil
 * Max duration is 2 minutes, or 2:40 if full job point allocation to Step Duration
 
 ## TODO / Known Issues
-* Check for miss and don't track debuff if missed step.
-* Clear tracked enemy from the table upon its death.
-* Listen for debuff removal events on enemies (such as from Erase) and untrack those debuffs.
+* Hide UI if not on DNC or sub DNC. Make this feature configurable.
