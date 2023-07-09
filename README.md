@@ -12,6 +12,7 @@ Plugin Manager details can be found at https://docs.windower.net/addons/pluginma
 ## How It Works
 
 Displays a UI only when targeting an enemy with a Step debuff on it. This UI will show you the timers for all the Step debuffs it has active.
+![image](https://github.com/shastaxc/metronome/assets/7599524/764d5374-c709-4695-909b-bb4193791755)
 
 ### Assumptions
 
