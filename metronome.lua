@@ -15,7 +15,7 @@ res = require('resources')
 packets = require('packets')
 config = require('config')
 texts = require('texts')
--- inspect = require('inspect')
+inspect = require('inspect')
 
 chat_purple = string.char(0x1F, 200)
 chat_grey = string.char(0x1F, 160)
@@ -59,18 +59,17 @@ default_settings = {
 }
 step_actions = {
   [201] = {name='Quickstep',    action_id=201, status_id=386},
-  [202] = {name='Box Step',     action_id=201, status_id=391},
-  [203] = {name='Stutter Step', action_id=201, status_id=396},
-  [312] = {name='Feather Step', action_id=201, status_id=448},
+  [202] = {name='Box Step',     action_id=202, status_id=391},
+  [203] = {name='Stutter Step', action_id=203, status_id=396},
+  [312] = {name='Feather Step', action_id=312, status_id=448},
 }
 step_debuffs = {
   [386] = {name='Quickstep',    action_id=201, status_id=386},
-  [391] = {name='Box Step',     action_id=201, status_id=391},
-  [396] = {name='Stutter Step', action_id=201, status_id=396},
-  [448] = {name='Feather Step', action_id=201, status_id=448},
+  [391] = {name='Box Step',     action_id=202, status_id=391},
+  [396] = {name='Stutter Step', action_id=203, status_id=396},
+  [448] = {name='Feather Step', action_id=312, status_id=448},
 }
-STEP_TIME_EXTENSION_SUB = 30
-STEP_TIME_EXTENSION_MAIN = 60
+STEP_TIME_EXTENSION = 30
 
 function init()
   player = {} -- Player status
@@ -223,18 +222,13 @@ function process_step_action(act, step, level)
   -- If no current expiration or current tracked step is expired, this is intial application
   if not current_exp then
     -- Initial application is 1 min (plus possible step JP)
-    new_exp = now() + (60 * 1000) + (step_jp * 1000)
+    new_exp = now() + (STEP_TIME_EXTENSION * 1000 *2) + (step_jp * 1000)
   else -- If debuff is already on enemy, calculate extended duration
-    new_exp = current_exp + (is_main and STEP_TIME_EXTENSION_MAIN * 1000 or STEP_TIME_EXTENSION_SUB * 1000) + (step_jp * 1000)
+    new_exp = current_exp + (is_main and STEP_TIME_EXTENSION * 1000) + (step_jp * 1000)
 
     -- Clip duration based on main/sub DNC and JP allocation
-    -- Max duration is 2 mins without JP or 2:40 with full JP
-    local max_exp
-    if is_main then
-      max_exp = now() + 120000 + (step_jp * 1000 * 2)
-    else
-      max_exp = now() + 120000
-    end
+    -- Max duration is 2 mins without JP or 2:20 with full JP
+    local max_exp = now() + 120000 + (step_jp * 1000)
 
     if current_exp > max_exp then
       new_exp = current_exp
@@ -285,12 +279,22 @@ windower.register_event('incoming chunk', function(id, data, modified, injected,
     local debuff_id2 = packet['Param 2']
     
     if tracker[actor_id]
+        and S{64,204,206,350,531}:contains(msg_id) then
+      windower.add_to_chat(1, inspect(packet, {depth=5}))
+    end
+    if tracker[actor_id]
         and S{64,204,206,350,531}:contains(msg_id)
         and (step_debuffs[debuff_id1] or step_debuffs[debuff_id2]) then
-      tracker[actor_id][debuff_id1] = nil
-      tracker[actor_id][debuff_id2] = nil
+      local debuff1 = step_debuffs[debuff_id1] and step_debuffs[debuff_id1].name
+      local debuff2 = step_debuffs[debuff_id2] and step_debuffs[debuff_id2].name
+      if debuff1 then
+        tracker[actor_id][debuff1] = nil
+      end
+      if debuff2 then
+        tracker[actor_id][debuff2] = nil
+      end
       -- If actor has no more step debuffs, remove from tracker
-      if tracker[actor_id]:length() == 0 then
+      if table.length(tracker[actor_id]) == 0 then
         tracker[actor_id] = nil
       end
     end

@@ -17,7 +17,6 @@ Displays a UI only when targeting an enemy with a Step debuff on it. This UI wil
 
 * All Steps from players other than you are sub DNC (unless Feather Step was used because that can only come from main DNC)
 * Feather Step from other DNC do not get job point bonus to duration
-* Max duration is 2 minutes, or 2:40 if full job point allocation to Step Duration
 
 ## TODO / Known Issues
 * Hide UI if not on DNC or sub DNC. Make this feature configurable.
