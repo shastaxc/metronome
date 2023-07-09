@@ -1,6 +1,6 @@
-_addon.name = 'HasteInfo'
+_addon.name = 'Metronome'
 _addon.author = 'Shasta'
-_addon.version = '0.0.3'
+_addon.version = '1.0.0'
 _addon.commands = {'met','metronome'}
 
 -------------------------------------------------------------------------------
@@ -34,6 +34,7 @@ inline_blue = '\\cs(0,0,255)'
 inline_gray = '\\cs(170,170,170)'
 
 default_settings = {
+  display_on_all_jobs = false,
   loop_interval = 1000,
   display={
     text={
@@ -71,7 +72,7 @@ step_debuffs = {
 }
 STEP_TIME_EXTENSION = 30
 
-function init()
+function init(force_init)
   player = {} -- Player status
   tracker = {} -- Tracks enemies' step debuffs, keyed by enemy actor ID
   -- Tracked value model:
@@ -81,15 +82,21 @@ function init()
   --   ['Stutter Step'] = {name='Stutter Step', action_id=201, status_id=396, exp=4573573, level=1},
   --   ['Feather Step'] = {name='Feather Step', action_id=201, status_id=448, exp=7894567, level=5},
   -- }
-  loop_time = now() -- Timestamp of previous loop reset
   update_player_info()
+  loop_time = now() -- Timestamp of previous loop reset
   settings = config.load(default_settings)
   ui = texts.new('${value}', settings.display)
   ui.value = 'Loading Metronome...'
-  -- Set UI visibility based on saved setting
-  ui:visible(settings.show_ui)
 
-  initialized = true
+  if not force_init and not display_on_all_jobs and player.main_job ~= 'DNC' and player.sub_job ~= 'DNC' then
+    -- If not dnc or /dnc soft unload
+    ui:hide()
+    initialized = false
+  else
+    -- Set UI visibility based on saved setting
+    ui:visible(settings.show_ui)
+    initialized = true
+  end
 end
 
 -- Update player info
@@ -318,7 +325,7 @@ windower.register_event('login', function()
 end)
 
 windower.register_event('job change', function(main_job_id, main_job_level, sub_job_id, sub_job_level)
-  update_player_info()
+  init()
 end)
 
 windower.register_event('action', function(act)
@@ -363,6 +370,9 @@ windower.register_event('addon command', function(cmd, ...)
       show_ui()
       settings:save()
       windower.add_to_chat(001, chat_d_blue..'Metronome: UI visibility set to '..chat_white..tostring(settings.show_ui)..chat_d_blue..'.')
+      if not initialized then
+        init(true)
+      end
     elseif 'hide' == cmd then
       settings.show_ui = false
       hide_ui()
@@ -374,6 +384,13 @@ windower.register_event('addon command', function(cmd, ...)
       ui:pos(0, 0)
       settings:save()
       windower.add_to_chat(001, chat_d_blue..'Metronome: UI position reset to default.')
+    elseif 'jobs' == cmd then
+      settings.display_on_all_jobs = not settings.display_on_all_jobs
+      settings:save()
+      windower.add_to_chat(001, chat_d_blue..'Metronome: Display On All Jobs set to '..chat_white..tostring(settings.display_on_all_jobs)..chat_d_blue..'.')
+      if settings.display_on_all_jobs and not initialized then
+        init(true)
+      end
     elseif 'test' == cmd then
     elseif 'help' == cmd then
       windower.add_to_chat(6, ' ')
@@ -383,6 +400,7 @@ windower.register_event('addon command', function(cmd, ...)
       windower.add_to_chat(6, chat_l_blue..	'//met show ' .. chat_white .. ': Show UI')
       windower.add_to_chat(6, chat_l_blue..	'//met hide ' .. chat_white .. ': Hide UI')
       windower.add_to_chat(6, chat_l_blue..	'//met resetpos ' .. chat_white .. ': Reset position of UI to default')
+      windower.add_to_chat(6, chat_l_blue..	'//met jobs ' .. chat_white .. ': Display show/hide based on job being DNC or not.')
       windower.add_to_chat(6, chat_l_blue..	'//met help ' .. chat_white .. ': Display this help menu again')
     else
       windower.send_command('met help')
