@@ -19,4 +19,4 @@ Displays a UI only when targeting an enemy with a Step debuff on it. This UI wil
 * Feather Step from other DNC do not get job point bonus to duration
 
 ## TODO / Known Issues
-* Hide UI if not on DNC or sub DNC. Make this feature configurable.
+* None
