@@ -1,6 +1,6 @@
 _addon.name = 'Metronome'
 _addon.author = 'Shasta'
-_addon.version = '1.0.0'
+_addon.version = '1.0.1'
 _addon.commands = {'met','metronome'}
 
 -------------------------------------------------------------------------------
@@ -204,15 +204,15 @@ function process_step_action(act, step, level)
   -- If not action used by self and not Feather Step, assume player is subjob DNC
   local is_main
   local step_jp = 0
-  if step.action_id == 312 then -- Feather Step can only be used by main DNC
-    is_main = true
-  elseif act.actor_id == player.id then
+  if act.actor_id == player.id then
     -- Check own job to determine if main or subjob DNC
     is_main = player.main_job == 'DNC'
     if is_main then
       -- Check job points
       step_jp = player.job_points[player.main_job:lower()].step_duration
     end
+  elseif step.action_id == 312 then -- Feather Step can only be used by main DNC
+    is_main = true
   else
     is_main = false
   end
