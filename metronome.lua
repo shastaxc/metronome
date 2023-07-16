@@ -1,6 +1,6 @@
 _addon.name = 'Metronome'
 _addon.author = 'Shasta'
-_addon.version = '1.0.1'
+_addon.version = '1.0.3'
 _addon.commands = {'met','metronome'}
 
 -------------------------------------------------------------------------------
@@ -71,6 +71,7 @@ step_debuffs = {
   [448] = {name='Feather Step', action_id=312, status_id=448},
 }
 STEP_TIME_EXTENSION = 30
+lost_buff_msg_ids = S{64,204,206,350,531}
 
 function init(force_init)
   player = {} -- Player status
@@ -231,7 +232,7 @@ function process_step_action(act, step, level)
     -- Initial application is 1 min (plus possible step JP)
     new_exp = now() + (STEP_TIME_EXTENSION * 1000 *2) + (step_jp * 1000)
   else -- If debuff is already on enemy, calculate extended duration
-    new_exp = current_exp + (is_main and STEP_TIME_EXTENSION * 1000) + (step_jp * 1000)
+    new_exp = current_exp + (STEP_TIME_EXTENSION * 1000) + (step_jp * 1000)
 
     -- Clip duration based on main/sub DNC and JP allocation
     -- Max duration is 2 mins without JP or 2:20 with full JP
@@ -286,7 +287,7 @@ windower.register_event('incoming chunk', function(id, data, modified, injected,
     local debuff_id2 = packet['Param 2']
     
     if tracker[actor_id]
-        and S{64,204,206,350,531}:contains(msg_id)
+        and lost_buff_msg_ids:contains(msg_id)
         and (step_debuffs[debuff_id1] or step_debuffs[debuff_id2]) then
       local debuff1 = step_debuffs[debuff_id1] and step_debuffs[debuff_id1].name
       local debuff2 = step_debuffs[debuff_id2] and step_debuffs[debuff_id2].name
