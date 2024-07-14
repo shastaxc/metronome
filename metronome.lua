@@ -26,7 +26,7 @@
 
 _addon.name = 'Metronome'
 _addon.author = 'Shasta'
-_addon.version = '1.0.3'
+_addon.version = '1.0.4'
 _addon.commands = {'met','metronome'}
 
 -------------------------------------------------------------------------------
@@ -422,7 +422,7 @@ windower.register_event('addon command', function(cmd, ...)
     elseif 'help' == cmd then
       windower.add_to_chat(6, ' ')
       windower.add_to_chat(6, chat_d_blue.. 'Metronome Commands available:' )
-      windower.add_to_chat(6, chat_l_blue..	'//met r' .. chat_white .. ': Reload HasteInfo addon')
+      windower.add_to_chat(6, chat_l_blue..	'//met r' .. chat_white .. ': Reload addon')
       windower.add_to_chat(6, chat_l_blue..	'//met vis ' .. chat_white .. ': Toggle UI visibility')
       windower.add_to_chat(6, chat_l_blue..	'//met show ' .. chat_white .. ': Show UI')
       windower.add_to_chat(6, chat_l_blue..	'//met hide ' .. chat_white .. ': Hide UI')
