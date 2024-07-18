@@ -1,9 +1,9 @@
 # Metronome
-FFXI Windower addon that tracks Dancer Step timers on enemies and displays it in the UI.
+FFXI Windower v4 addon that tracks Dancer Step timers on enemies and displays it in the UI.
 
 ## How to Install
 
-Download the addon and place the HasteInfo folder into your windower `addons` folder.
+Download the addon and place the 'metronome' folder into your windower `addons` folder (rename it to 'metronome' if it has a different name).
 In game, run this command: `lua load metronome`
 
 If you want it to load automatically when you log in, I highly recommend configuring it in the Plugin Manager addon, which you can get in the Windower launcher.
